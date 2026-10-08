@@ -3,18 +3,10 @@ class Solution(object):
         new = ""
 
         for char in s:
-
             if char.isalnum():
-                new+= char.lower()
+                new += char.lower()
 
-        l = 0
-        r = len(new) - 1
-
-        while l < r:
-            if new[l] != new[r]:
-                return False
-            l+=1 
-            r-=1
+        return new == new[::-1]
         return True
             
         """
