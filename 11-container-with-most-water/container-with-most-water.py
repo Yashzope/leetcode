@@ -5,10 +5,10 @@ class Solution(object):
         maxx = 0
 
         while l < r:
-            length = min(height[l],height[r])
+            """length = min(height[l],height[r])
             width = r - l 
-            area = length * width
-
+            """
+            area = min(height[l],height[r]) * (r-l)
             if area > maxx: 
                 maxx = area
                 
