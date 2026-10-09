@@ -8,7 +8,7 @@ class Solution(object):
 
         while l < r:
             if height[l] <= height[r]:
-                if height[l] >= left_max:
+                if height[l] > left_max:
                     left_max = height[l]
                 else:
                     water += left_max - height[l]
