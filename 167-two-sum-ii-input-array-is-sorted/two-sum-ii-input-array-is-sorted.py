@@ -4,8 +4,7 @@ class Solution(object):
         r = len(numbers) - 1
         
         while l < r:
-            total = numbers[l] + numbers[r]
-            if target == total:
+            if target == numbers[l] + numbers[r]:
                 return [l+1 ,r+1]
             else:
                 if target < numbers[l] + numbers[r]:
