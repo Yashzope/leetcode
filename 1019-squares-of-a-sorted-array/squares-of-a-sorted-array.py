@@ -1,9 +1,8 @@
 class Solution(object):
     def sortedSquares(self, nums):
-        l = 0
-        r = len(nums)-1
+        l , r = 0 , len(nums)-1
         result = [0] * len(nums)
-        position = len(nums) -1
+        position = r
 
         while l <= r:
             if abs(nums[l]) <= abs(nums[r]):
