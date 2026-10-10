@@ -3,7 +3,6 @@ class Solution(object):
         l , r = 0 , len(nums)-1
         result = [0] * len(nums)
         position = r
-
         while l <= r:
             if abs(nums[l]) <= abs(nums[r]):
                 result[position] = nums[r] **2
