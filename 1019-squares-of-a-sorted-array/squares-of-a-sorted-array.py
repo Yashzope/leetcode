@@ -1,23 +1,13 @@
 class Solution(object):
     def sortedSquares(self, nums):
-        
-        l , r = 0 , len(nums)-1
-        result = [0] * len(nums)
-        position = r
+        for i in range(len(nums)):
+            nums[i] *= nums[i]
+        a = sorted(nums)
+        return a
 
-        while l <= r:
-            if abs(nums[l]) <= abs(nums[r]):
-                result[position] = nums[r] **2
-                r-=1
-            else:
-                result[position] = nums[l] **2
-                l+=1
             
-            position-=1
-        
-        return result
         """
         :type nums: List[int]
         :rtype: List[int]
         """
-        
+       
