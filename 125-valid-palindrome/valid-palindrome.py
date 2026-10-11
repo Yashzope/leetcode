@@ -6,10 +6,17 @@ class Solution(object):
             if char.isalnum():
                 new += char.lower()
 
-        return new == new[::-1]
+        l , r = 0 , len(new) - 1
+
+        while l < r:
+            if new[l] != new[r]:
+                return False
+            l+=1
+            r-=1
         return True
-            
-        """
+        """ return new == new[::-1]
+        return True
+      
         :type s: str
         :rtype: bool
         """
