@@ -4,10 +4,3 @@ class Solution(object):
             nums[i] *= nums[i]
         a = sorted(nums)
         return a
-
-            
-        """
-        :type nums: List[int]
-        :rtype: List[int]
-        """
-       
