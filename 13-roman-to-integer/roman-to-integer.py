@@ -1,13 +1,26 @@
 class Solution(object):
     def romanToInt(self, s):
-        d ={'I':1,'V':5,'X':10,'L':50,'C':100,'D':500,'M':1000 }
+        values = {
+            'I': 1,
+            'V': 5,
+            'X': 10,
+            'L': 50,
+            'C': 100,
+            'D': 500,
+            'M': 1000
+        }
 
-        ans=0
+        total = 0
 
-        for i in range(len(s)-1):
-            if(d[s[i]]<d[s[i+1]]):
-                ans=ans-d[s[i]]
+        for i in range(len(s)):
+            if i + 1 < len(s) and values[s[i]] < values[s[i + 1]]:
+                total -= values[s[i]]
             else:
-                ans=ans+d[s[i]]
-        ans= ans+d[s[-1]]  
-        return ans
+                total += values[s[i]]
+
+        return total
+        """
+        :type s: str
+        :rtype: int
+        """
+        
