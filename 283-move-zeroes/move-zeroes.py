@@ -5,3 +5,4 @@ class Solution(object):
             if nums[f] != 0:
                 nums[s] , nums[f] = nums[f] , nums[s]
                 s+=1
+        return nums[:s]
