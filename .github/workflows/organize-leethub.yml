@@ -1,0 +1,105 @@
+
+name: Organize LeetHub Uploads
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "LeetCode/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: organize-leethub
+  cancel-in-progress: false
+
+jobs:
+  organize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Move uploaded solutions safely
+        shell: bash
+        run: |
+          python - <<'PY'
+          import shutil
+          import sys
+          from pathlib import Path
+
+          source_root = Path("LeetCode")
+
+          if not source_root.is_dir():
+              print("No LeetCode upload directory found.")
+              sys.exit(0)
+
+          sources = sorted(
+              p for p in source_root.iterdir()
+              if p.is_dir() and not p.is_symlink()
+          )
+
+          if not sources:
+              print("No problem folders to organize.")
+              sys.exit(0)
+
+          # Preflight: reject all conflicts before moving anything.
+          for source in sources:
+              destination = Path(source.name)
+
+              if destination.is_symlink() or (
+                  destination.exists() and not destination.is_dir()
+              ):
+                  sys.exit(f"Unsafe destination: {destination}")
+
+              for item in source.rglob("*"):
+                  if item.is_symlink():
+                      sys.exit(f"Symlink not allowed: {item}")
+
+                  target = destination / item.relative_to(source)
+
+                  if target.exists():
+                      if item.is_file() or not target.is_dir():
+                          sys.exit(
+                              f"Conflict: {item} -> {target}. "
+                              "Nothing was moved."
+                          )
+
+          # Move files only after every destination passes preflight.
+          for source in sources:
+              destination = Path(source.name)
+
+              for item in sorted(source.rglob("*")):
+                  if item.is_file():
+                      target = destination / item.relative_to(source)
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      shutil.move(str(item), str(target))
+
+              shutil.rmtree(source)
+              print(f"Organized: {source.name}")
+
+          # Remove the upload directory if it is now empty.
+          if not any(source_root.iterdir()):
+              source_root.rmdir()
+          PY
+
+      - name: Commit organized solutions
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "Nothing to organize."
+            exit 0
+          fi
+
+          git commit -m "Organize LeetHub uploads [skip ci]"
+          git push
