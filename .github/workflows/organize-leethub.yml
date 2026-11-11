@@ -25,40 +25,41 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
 
-      - name: Move uploaded solutions safely
+      - name: Organize and version solutions
         shell: bash
         run: |
           python - <<'PY'
+          import re
           import shutil
           import sys
           from pathlib import Path
 
           source_root = Path("LeetCode")
 
-          if not source_root.is_dir():
+          if not source_root.exists():
               print("No LeetCode upload directory found.")
               sys.exit(0)
 
-          if source_root.is_symlink():
+          if source_root.is_symlink() or not source_root.is_dir():
               sys.exit("Unsafe LeetCode directory.")
 
           sources = sorted(
               p for p in source_root.iterdir()
-              if p.is_dir() and not p.is_symlink()
+              if p.is_dir()
           )
 
-          if not sources:
-              print("No problem folders to organize.")
-              sys.exit(0)
-
-          # Validate all paths before changing anything.
+          # Validate all incoming paths before making changes.
           for source in sources:
+              if source.is_symlink():
+                  sys.exit(f"Unsafe source: {source}")
+
               destination = Path(source.name)
 
-              if destination.is_symlink() or (
-                  destination.exists() and not destination.is_dir()
-              ):
+              if destination.is_symlink():
                   sys.exit(f"Unsafe destination: {destination}")
+
+              if destination.exists() and not destination.is_dir():
+                  sys.exit(f"Destination is not a folder: {destination}")
 
               for item in source.rglob("*"):
                   if item.is_symlink():
@@ -68,19 +69,22 @@ jobs:
                       continue
 
                   target = destination / item.relative_to(source)
-                  current = Path(".")
 
+                  current = Path(".")
                   for part in target.parent.parts:
                       current = current / part
-                      if current.is_symlink() or (
-                          current.exists() and not current.is_dir()
-                      ):
+                      if current.is_symlink():
                           sys.exit(f"Unsafe destination: {current}")
+                      if current.exists() and not current.is_dir():
+                          sys.exit(f"Invalid destination: {current}")
 
                   if target.is_symlink():
                       sys.exit(f"Unsafe target: {target}")
 
-          # Move new files; skip identical files; preserve conflicts.
+                  if target.exists() and not target.is_file():
+                      sys.exit(f"Target is not a file: {target}")
+
+          # Move files and preserve previous Solution.py versions.
           for source in sources:
               destination = Path(source.name)
 
@@ -89,19 +93,47 @@ jobs:
                       continue
 
                   target = destination / item.relative_to(source)
+                  target.parent.mkdir(parents=True, exist_ok=True)
 
                   if target.exists():
-                      if (
-                          target.is_file()
-                          and target.read_bytes() == item.read_bytes()
-                      ):
+                      if target.read_bytes() == item.read_bytes():
                           item.unlink()
                           print(f"Skipped identical file: {target}")
-                      else:
-                          print(f"CONFLICT - Preserved: {item}")
+                          continue
+
+                      if item.name == "Solution.py":
+                          versions = []
+
+                          for old in destination.glob("Solution_v*.py"):
+                              match = re.fullmatch(
+                                  r"Solution_v(\d+)\.py", old.name
+                              )
+                              if match:
+                                  if old.is_symlink():
+                                      sys.exit(f"Unsafe version: {old}")
+                                  versions.append(int(match.group(1)))
+
+                          next_version = max(versions, default=0) + 1
+                          archive = destination / (
+                              f"Solution_v{next_version}.py"
+                          )
+
+                          while archive.exists() or archive.is_symlink():
+                              next_version += 1
+                              archive = destination / (
+                                  f"Solution_v{next_version}.py"
+                              )
+
+                          shutil.move(str(target), str(archive))
+                          print(f"Archived previous solution: {archive}")
+
+                          shutil.move(str(item), str(target))
+                          print(f"Installed latest solution: {target}")
+                          continue
+
+                      print(f"CONFLICT - Preserved incoming file: {item}")
                       continue
 
-                  target.parent.mkdir(parents=True, exist_ok=True)
                   shutil.move(str(item), str(target))
                   print(f"Moved: {item} -> {target}")
 
@@ -124,8 +156,7 @@ jobs:
           if source_root.is_dir() and not any(source_root.iterdir()):
               source_root.rmdir()
 
-          print("Organization completed.")
-
+          print("Organization and versioning completed.")
           PY
 
       - name: Commit organized solutions
@@ -141,5 +172,5 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Organize LeetHub uploads [skip ci]"
+          git commit -m "Organize and version LeetHub uploads [skip ci]"
           git push
